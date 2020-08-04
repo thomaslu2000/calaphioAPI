@@ -3,9 +3,11 @@ const Router = express.Router();
 const mysqlConnection = require("../connection");
 
 Router.get("/", (req, res) => {
-	console.log(req.query);
 	mysqlConnection.query(
-		"SELECT * from apo_calendar_event LIMIT 10",
+		"SELECT title, location, description, time_start, time_end, time_allday, " +
+			"type_interchapter, type_service_chapter, type_service_campus, type_service_community, type_service_country, type_fellowship, " +
+			"type_fundraiser, creator_id, start_at, end_at, evaluated FROM apo_calendar_event " +
+			`WHERE event_id=${req.query.eventId}`,
 		(err, rows, fields) => {
 			if (!err) {
 				res.send(rows);
@@ -21,7 +23,7 @@ Router.get("/day", (req, res) => {
 	mysqlConnection.query(
 		"SELECT event_id, title, location, description, time_start, time_end, time_allday, " +
 			"type_interchapter, type_service_chapter, type_service_campus, type_service_community, type_service_country, type_fellowship, " +
-			"type_fundraiser, creator_id, start_at, end_at FROM apo_calendar_event " +
+			"type_fundraiser, creator_id, start_at, end_at, evaluated FROM apo_calendar_event " +
 			`WHERE deleted=0 AND date='${date}'`,
 		(err, rows, fields) => {
 			if (!err) {
@@ -172,6 +174,35 @@ Router.post("/edit", (req, res) => {
 			}
 		}
 	);
+});
+
+Router.post("/evaluate", (req, res) => {
+	let data = req.body;
+	let eid = data.eventId;
+	let queries = data.attend.map((item) => {
+		return (
+			`UPDATE apo_calendar_attend SET attended=${item.attended}, chair=${item.chair}, flaked=${item.flaked}, ` +
+			`hours=${item.hours} WHERE event_id=${eid} AND user_id=${item.userId}`
+		);
+	});
+	if (data.delete.length > 0)
+		queries.push(
+			`DELETE FROM apo_calendar_attend WHERE event_id=${eid} AND (${data.delete
+				.map((id) => {
+					return `user_id=${id}`;
+				})
+				.join(" OR ")})`
+		);
+	queries.push(
+		`UPDATE apo_calendar_event SET evaluated=1 WHERE event_id=${eid}`
+	);
+	mysqlConnection.query(queries.join("; "), (err, rows, fields) => {
+		if (!err) {
+			res.send(rows);
+		} else {
+			console.log(err);
+		}
+	});
 });
 
 module.exports = Router;
