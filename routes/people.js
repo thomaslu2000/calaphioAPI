@@ -66,4 +66,21 @@ Router.get("/stats", (req, res) => {
 	);
 });
 
+Router.get("/toEval", (req, res) => {
+	let data = req.query;
+	mysqlConnection.query(
+		`SELECT event_id, title \
+		FROM apo_calendar_attend JOIN apo_calendar_event USING (event_id) \
+		WHERE user_id=${data.userId} AND chair=1 AND evaluated=0 AND start_at < CURRENT_TIMESTAMP \
+		ORDER BY start_at ASC`,
+		(err, rows, fields) => {
+			if (!err) {
+				res.send(rows);
+			} else {
+				console.log(err);
+			}
+		}
+	);
+});
+
 module.exports = Router;
