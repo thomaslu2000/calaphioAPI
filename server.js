@@ -1,7 +1,6 @@
 const express = require("express");
 const path = require("path");
 const bodyParser = require("body-parser");
-const mysqlConnection = require("./connection");
 const PeopleRoutes = require("./routes/people");
 const EventsRoutes = require("./routes/Events");
 const GeneralRoutes = require("./routes/general");
